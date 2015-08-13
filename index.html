@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Distance To LFL</title>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            .panel {
+                font-family: 'sans-serif';
+                line-height: 30px;
+                padding-left: 10px;
+            }
+            #outputDiv {
+                font-size: 11px;
+            }
+            #originAddress,#destinationAddresses {
+                display: block;
+                clear: both;
+            }
+            textarea {
+                margin: 0px 226px 0px 0px; width: 502px; height: 114px;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="panel">
+            <div id="inputs">
+                
+                       "510 Victoria, Venice, CA"
+                <textarea id="destinationAddresses">
+Times Square, Manhattan, NY 10036
+13000 S Dakota 244, Keystone, SD 57751
+1600 Pennsylvania Ave NW, Washington, DC 20500
+Golden Gate Bridge, San Francisco, CA 94129
+Stonehenge, A344, Amesbury, Wiltshire SP4 7DE, United Kingdom
+Great Wall of China
+Hollywood Sign, Los Angeles, CA </textarea>
+            </div><button onclick="window.initMap();">Get Distances</button>
+
+            <div>
+                <strong>Results</strong>
+            </div>
+
+            <ul id="outputDiv"></ul>
+        </div>
+        <script>
+            function initMap() {
+                document.getElementById("outputDiv").innerHTML ="";//clear if not empty
+                var ks = document.getElementById('destinationAddresses').value;
+                var destinations = ks.split("\n");// We can go to any location in this field
+                var rad = function (x) {
+                    return x * Math.PI / 180;
+                };
+
+//haversine formula from stack
+                var getDistance = function (p1, p2) {
+                    console.log(p1, p2);
+                    var R = 3959; // Earth’s mean radius in meter
+                    var dLat = rad(p2.lat - p1.lat);
+                    var dLong = rad(p2.lng - p1.lng);
+                    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                            Math.cos(rad(p1.lat)) * Math.cos(rad(p2.lat)) *
+                            Math.sin(dLong / 2) * Math.sin(dLong / 2);
+                    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                    var d = R * c;
+                    return d; // returns the distance in miles
+                };
+                var sort_array = [];
+                var cnt = destinations.length;
+                for (var j = 0; j < destinations.length; j++) {
+                    //pull lat lngs from google maps- ESRI has a bulk loader, but LFL does alot of google stuff so it seems to fit better
+                    geocoder = new google.maps.Geocoder();
+                    geocoder.geocode({
+                        'address': destinations[j]
+                    }, function (results, status, destinations) {
+                        if (status != google.maps.GeocoderStatus.OK) {
+                            alert("Geocode was not successful for the following reason: " + status);
+                            return false;
+                        }
+                        var geo = {lat: results[0].geometry.location.lat(), lng: results[0].geometry.location.lng()};
+                        // we know the origin so it doesnt make sense to spend an extra api call on it.
+                        var dist = getDistance({lat: 33.9882332, lng: -118.45908609999998},geo);
+                        sort_array.push({dist:dist,html: "<li>" + results[0].formatted_address + " : dist " + dist});
+                        
+                        if(sort_array.length===cnt){// there is a better way to do this.
+                            sort_array.sort(function(x,y){return x.dist - y.dist});
+                            for (var j = 0; j < sort_array.length; j++) {
+                                document.getElementById("outputDiv").innerHTML += sort_array[j].html;
+                            }
+                        }
+                    });
+                    
+                    
+                }
+            }
+        </script> <script async="" defer src=
+        "https://maps.googleapis.com/maps/api/js?signed_in=true&callback=initMap"></script>
+    </body>
+</html>
